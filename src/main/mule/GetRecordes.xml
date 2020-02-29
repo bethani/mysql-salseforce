@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="874cdd20-932f-41c3-afa7-37972b5c2e5f" >
+		<salesforce:cached-basic-connection username="wendifraw15@gmail.com" password="Honda@2010" securityToken="wShqIuPXu1NU0HwrhVWAFyoA4" />
+	</salesforce:sfdc-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="94a2d9f6-a11f-4034-84a3-159173c5edea" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root" database="customers" />
+	</db:config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="dce46d7c-4ef8-4b4d-b593-5535e951ea34" >
+		<email:smtp-connection host="localhost" user="wendifraw15@gmail.com" password="Ethiopia1@" port="587">
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true"/>
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<sub-flow name="GetRecordes" doc:id="afe06015-16be-4760-b443-e5b4a64aee94" >
+		<salesforce:query doc:name="Query" doc:id="9db011a1-a3b3-4f90-b535-6974ae6911d6" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query >Select Address__c,Email__c,Gender__c,Id__c,Name__c,Order_Number__c,Payment_mode__c,Phone_Number__c,Prodact__c,Quantity__c from LCustomer__c</salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="06719bc1-8d1f-411d-8118-82e5d96af922" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+ payload map
+{
+	Order_Number: $.Order_Number__c,
+    Gender: $.Gender__c,
+    Product: $.Product__c,
+    Id: $.Id__c,
+    Phone_Number__:$.Phone_Number__c,
+    Name: $.Name,
+    Address: $.Address__c,
+    Email: $.Email__c,
+    Payment_mode: $.Payment_mode__c,
+    Quantity: $.Quantity__c
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="194179cf-3712-4c19-97cc-40097a3e535e" >
+			<db:insert doc:name="Insert" doc:id="bb4c2c0e-1689-45c6-8956-5bd24e09f583" config-ref="Database_Config">
+				<db:sql >Insert into customer (Order_Number,Gender,Product,Id,Phone_Number,Name,Address,Email,Payment_mode,Quantity) values(Order_Number,Gender,Product,Id,Phone_Number,Name,Address,Email,Payment_mode,Quantity)</db:sql>
+				<db:input-parameters ><![CDATA[output application/json ---.payload]]></db:input-parameters>
+			</db:insert>
+			<logger level="INFO" doc:name="Logger" doc:id="33d2a4ec-fc48-4530-8492-5d1417f948c6" />
+		</foreach>
+		<set-payload value="Data successfully inserted into mysql......." doc:name="Set Payload" doc:id="e6467a66-a346-4369-b67f-d6acc498c2e0" />
+		<email:send doc:name="Send" doc:id="4fe6cad6-db42-4c1b-90db-ebb1e04ce7a0" config-ref="Email_SMTP" subject="salseforce imformation">
+			<email:to-addresses >
+				<email:to-address value="wendifraw15@gmail.com" />
+			</email:to-addresses>
+		</email:send>
+		<set-payload value="data secsesfuy inserted" doc:name="Set Payload" doc:id="828700bf-57d6-45ad-9495-cb5bf8a24b58" />
+	</sub-flow>
+</mule>
